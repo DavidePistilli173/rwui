@@ -4,10 +4,33 @@ use cgmath::{Point2, Vector2};
 use chrono::Duration;
 use rwgfx::animation::Animated;
 use rwgfx::sprite::Sprite;
+use std::marker::PhantomData;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 
+/// Collection of parameters for button creation.
+pub struct ButtonDescriptor<'a, T> {
+    /// Rendering context.
+    pub context: &'a rwgfx::context::Context,
+    /// Absolute position of the button.
+    pub position: Point2<f32>,
+    /// Size of the button.
+    pub size: Vector2<f32>,
+    /// Lower values are drawn in front of higher ones.
+    pub z_index: f32,
+    /// Background colour.
+    pub back_colour: [f32; 4],
+    /// Optional callback called when the button is pressed.
+    pub on_press: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the button is released.
+    pub on_release: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the mouse enters the boundaries of the button.
+    pub on_enter: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the mouse leaves the boundaries of the button.
+    pub on_exit: Option<fn(&mut Button<T>, &mut T)>,
+}
+
 /// Rectangular object that can be interacted with.
-pub struct Button {
+pub struct Button<T> {
     /// Position of the button in screen coordinates.
     position: Animated<Point2<f32>>,
     /// Size of the button
@@ -22,15 +45,26 @@ pub struct Button {
     back_colour: [f32; 4],
     /// Alpha value of the white overlay of the button (for hovered-pressed animations).
     overlay_alpha: Animated<f32>,
+    /// Optional callback called when the button is pressed.
+    on_press: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the button is released.
+    on_release: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the mouse enters the boundaries of the button.
+    on_enter: Option<fn(&mut Button<T>, &mut T)>,
+    /// Optional callback called when the mouse leaves the boundaries of the button.
+    on_exit: Option<fn(&mut Button<T>, &mut T)>,
     /// Actual graphical component of the button.
     sprite: Sprite,
+    /// Phantom marker for generic type T.
+    _marker: PhantomData<T>,
 }
 
-impl Button {
+impl<T> Button<T> {
     /// Process an event.
     /// If the event is directed at this button, true is returned to signal that the event was consumed.
     /// Otherwise, false is returned.
-    pub fn consume_event(&mut self, event: &WindowEvent) -> bool {
+    /// If the event is consumed, all relevant callbacks are called using the provided data.
+    pub fn consume_event(&mut self, data: &mut T, event: &WindowEvent) -> bool {
         let mut event_consumed = false;
 
         match event {
@@ -49,6 +83,9 @@ impl Button {
                         self.hovered = true;
                         self.overlay_alpha
                             .set_target(self.overlay_alpha.target() + 0.1);
+                        if let Some(on_enter) = self.on_enter.as_ref() {
+                            on_enter(self, data);
+                        }
                         event_consumed = true;
                     }
                 } else {
@@ -56,6 +93,9 @@ impl Button {
                         self.hovered = false;
                         self.overlay_alpha
                             .set_target(self.overlay_alpha.target() - 0.1);
+                        if let Some(on_exit) = self.on_exit.as_ref() {
+                            on_exit(self, data);
+                        }
                         event_consumed = true;
                     }
                 }
@@ -69,6 +109,9 @@ impl Button {
                             self.pressed = false;
                             self.overlay_alpha
                                 .set_target(self.overlay_alpha.target() - 0.1);
+                            if let Some(on_press) = self.on_press.as_ref() {
+                                on_press(self, data);
+                            }
                             event_consumed = true;
                         }
                     } else {
@@ -76,6 +119,9 @@ impl Button {
                             self.pressed = true;
                             self.overlay_alpha
                                 .set_target(self.overlay_alpha.target() + 0.1);
+                            if let Some(on_release) = self.on_release.as_ref() {
+                                on_release(self, data);
+                            }
                             event_consumed = true;
                         }
                     }
@@ -96,25 +142,50 @@ impl Button {
     }
 
     /// Create a new button.
-    pub fn new(
-        context: &rwgfx::context::Context,
-        position: Point2<f32>,
-        size: Vector2<f32>,
-        z_index: f32,
-        back_colour: [f32; 4],
-    ) -> Self {
-        let sprite = Sprite::new(context, position, size, z_index, back_colour);
+    pub fn new(descriptor: &ButtonDescriptor<T>) -> Self {
+        let sprite = Sprite::new(
+            descriptor.context,
+            descriptor.position,
+            descriptor.size,
+            descriptor.z_index,
+            descriptor.back_colour,
+        );
 
         Self {
-            position: Animated::new(position, Duration::milliseconds(200)),
-            size: Animated::new(size, Duration::milliseconds(200)),
-            z_index,
+            position: Animated::new(descriptor.position, Duration::milliseconds(200)),
+            size: Animated::new(descriptor.size, Duration::milliseconds(200)),
+            z_index: descriptor.z_index,
             hovered: false,
             pressed: false,
-            back_colour,
+            back_colour: descriptor.back_colour,
             overlay_alpha: Animated::new(0.0, Duration::milliseconds(100)),
+            on_press: descriptor.on_press,
+            on_release: descriptor.on_release,
+            on_enter: descriptor.on_enter,
+            on_exit: descriptor.on_exit,
             sprite,
+            _marker: PhantomData,
         }
+    }
+
+    /// Set a new absolute position for the button.
+    pub fn set_position(&mut self, position: Point2<f32>) {
+        self.position.set_target(position);
+    }
+
+    /// Set a new position for the button, relative to the target position.
+    pub fn set_position_offset(&mut self, offset: Vector2<f32>) {
+        self.set_position(self.position.target() + offset);
+    }
+
+    /// Set a new absolute size for the button.
+    pub fn set_size(&mut self, size: Vector2<f32>) {
+        self.size.set_target(size);
+    }
+
+    /// Set a new size for the button relative to the target size.
+    pub fn set_size_offset(&mut self, offset: Vector2<f32>) {
+        self.set_size(self.size.target() + offset);
     }
 
     /// Update the button's logic.
