@@ -4,7 +4,6 @@ use cgmath::{Point2, Vector2};
 use chrono::Duration;
 use rwgfx::animation::Animated;
 use rwgfx::sprite::Sprite;
-use std::marker::PhantomData;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 
 /// Collection of parameters for button creation.
@@ -55,8 +54,6 @@ pub struct Button<T> {
     on_exit: Option<fn(&mut Button<T>, &mut T)>,
     /// Actual graphical component of the button.
     sprite: Sprite,
-    /// Phantom marker for generic type T.
-    _marker: PhantomData<T>,
 }
 
 impl<T> Button<T> {
@@ -164,7 +161,6 @@ impl<T> Button<T> {
             on_enter: descriptor.on_enter,
             on_exit: descriptor.on_exit,
             sprite,
-            _marker: PhantomData,
         }
     }
 
