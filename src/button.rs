@@ -88,14 +88,11 @@ impl Button {
     }
 
     /// Draw the button.
-    pub fn draw<'a, 'b>(
-        &'a self,
-        queue: &rwgfx::context::Queue,
-        render_pass: &mut rwgfx::context::RenderPass<'b>,
-    ) where
+    pub fn draw<'a, 'b>(&'a self, frame_context: &mut rwgfx::context::FrameContext<'b, 'a>)
+    where
         'a: 'b,
     {
-        self.sprite.draw(queue, render_pass);
+        self.sprite.draw(frame_context);
     }
 
     /// Create a new button.
