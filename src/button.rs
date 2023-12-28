@@ -18,6 +18,8 @@ pub struct ButtonDescriptor<'a, T> {
     pub z_index: f32,
     /// Background colour.
     pub back_colour: [f32; 4],
+    /// ID of the texture to use as background.
+    pub texture_id: Option<u64>,
     /// Optional callback called when the button is pressed.
     pub on_press: Option<fn(&mut Button<T>, &mut T)>,
     /// Optional callback called when the button is released.
@@ -146,6 +148,7 @@ impl<T> Button<T> {
             descriptor.size,
             descriptor.z_index,
             descriptor.back_colour,
+            descriptor.texture_id,
         );
 
         Self {
