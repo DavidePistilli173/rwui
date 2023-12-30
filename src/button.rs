@@ -2,7 +2,7 @@
 
 use cgmath::{Point2, Vector2};
 use chrono::Duration;
-use rwgfx::animation::Animated;
+use rwcommon::animation::Animated;
 use rwgfx::sprite::Sprite;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 

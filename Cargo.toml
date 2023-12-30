@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 cgmath = "0.18.0"
 chrono = "0.4.31"
+rwcommon = { path = "../rwcommon", version = "0.1.0" }
 rwgfx = { path = "../rwgfx", version = "0.1.0" }
 winit = "0.28.6"
