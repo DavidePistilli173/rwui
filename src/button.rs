@@ -133,11 +133,12 @@ impl<T> Button<T> {
     }
 
     /// Draw the button.
-    pub fn draw<'a, 'b>(&'a self, frame_context: &mut rwgfx::context::FrameContext<'b, 'a>)
-    where
-        'a: 'b,
-    {
-        self.sprite.draw(frame_context);
+    pub fn draw<'a>(
+        &'a self,
+        render_pass: &mut rwgfx::RenderPass<'a>,
+        frame_context: &rwgfx::context::FrameContext<'a>,
+    ) {
+        self.sprite.draw(render_pass, frame_context);
     }
 
     /// Create a new button.
@@ -185,6 +186,11 @@ impl<T> Button<T> {
     /// Set a new size for the button relative to the target size.
     pub fn set_size_offset(&mut self, offset: Vector2<f32>) {
         self.set_size(self.size.target() + offset);
+    }
+
+    /// Set a new z index for the button.
+    pub fn set_z_index(&mut self, z_index: f32) {
+        self.sprite.set_z_index(z_index);
     }
 
     /// Update the button's logic.
