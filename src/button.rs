@@ -4,12 +4,11 @@ use cgmath::{Point2, Vector2};
 use chrono::Duration;
 use rwcommon::animation::Animated;
 use rwgfx::sprite::Sprite;
+use rwgfx::text::{Text, TextDescriptor};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 
 /// Collection of parameters for button creation.
-pub struct ButtonDescriptor<'a, T> {
-    /// Rendering context.
-    pub context: &'a rwgfx::context::Context,
+pub struct ButtonDescriptor<T> {
     /// Absolute position of the button.
     pub position: Point2<f32>,
     /// Size of the button.
@@ -20,6 +19,8 @@ pub struct ButtonDescriptor<'a, T> {
     pub back_colour: [f32; 4],
     /// ID of the texture to use as background.
     pub texture_id: Option<u64>,
+    /// Label of the button.
+    pub label: Option<String>,
     /// Optional callback called when the button is pressed.
     pub on_press: Option<fn(&mut Button<T>, &mut T)>,
     /// Optional callback called when the button is released.
@@ -54,8 +55,12 @@ pub struct Button<T> {
     on_enter: Option<fn(&mut Button<T>, &mut T)>,
     /// Optional callback called when the mouse leaves the boundaries of the button.
     on_exit: Option<fn(&mut Button<T>, &mut T)>,
+    /// Label.
+    label: Option<String>,
     /// Actual graphical component of the button.
     sprite: Sprite,
+    /// Graphical component for the label.
+    text: Text,
 }
 
 impl<T> Button<T> {
@@ -136,20 +141,41 @@ impl<T> Button<T> {
     pub fn draw<'a>(
         &'a self,
         render_pass: &mut rwgfx::RenderPass<'a>,
-        frame_context: &rwgfx::context::FrameContext<'a>,
+        frame_context: &'a mut rwgfx::renderer::FrameContext<'a>,
     ) {
         self.sprite.draw(render_pass, frame_context);
+        self.text.draw(render_pass, frame_context);
     }
 
     /// Create a new button.
-    pub fn new(descriptor: &ButtonDescriptor<T>) -> Self {
+    pub fn new(renderer: &mut rwgfx::renderer::Renderer, descriptor: &ButtonDescriptor<T>) -> Self {
         let sprite = Sprite::new(
-            descriptor.context,
+            renderer,
             descriptor.position,
             descriptor.size,
             descriptor.z_index,
             descriptor.back_colour,
             descriptor.texture_id,
+        );
+
+        let text = Text::new(
+            renderer,
+            &descriptor.label.clone().unwrap_or(String::new()),
+            &TextDescriptor {
+                bold: false,
+                color: rwgfx::color::Decimal {
+                    r: 200,
+                    g: 0,
+                    b: 200,
+                    a: 255,
+                },
+                font_family: "Arial",
+                font_size: 14.0,
+                italic: false,
+                position: descriptor.position,
+                size: descriptor.size,
+                z: descriptor.z_index - 1.0,
+            },
         );
 
         Self {
@@ -164,7 +190,9 @@ impl<T> Button<T> {
             on_release: descriptor.on_release,
             on_enter: descriptor.on_enter,
             on_exit: descriptor.on_exit,
+            label: descriptor.label.clone(),
             sprite,
+            text,
         }
     }
 
