@@ -141,7 +141,7 @@ impl<T> Button<T> {
     pub fn draw<'a>(
         &'a self,
         render_pass: &mut rwgfx::RenderPass<'a>,
-        frame_context: &'a mut rwgfx::renderer::FrameContext<'a>,
+        frame_context: &rwgfx::renderer::FrameContext<'a>,
     ) {
         self.sprite.draw(render_pass, frame_context);
         self.text.draw(render_pass, frame_context);
