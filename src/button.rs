@@ -3,8 +3,12 @@
 use cgmath::{Point2, Vector2};
 use chrono::Duration;
 use rwcommon::animation::Animated;
+use rwgfx::drawable::Drawable;
+use rwgfx::renderer::{FrameCtx, Renderer};
 use rwgfx::sprite::Sprite;
 use rwgfx::text::{Text, TextDescriptor};
+use rwgfx::{asset, text};
+use rwlog::sender::Logger;
 use winit::event::{ElementState, MouseButton, WindowEvent};
 
 /// Collection of parameters for button creation.
@@ -63,12 +67,25 @@ pub struct Button<T> {
     text: Text,
 }
 
+impl<T> Drawable for Button<T> {
+    fn draw<'pass, 'ctx>(
+        &'pass self,
+        ctx: &'ctx FrameCtx<'pass>,
+        asset_manager: &'pass asset::Manager,
+    ) where
+        'pass: 'ctx,
+    {
+        self.sprite.draw(ctx, asset_manager);
+        self.text.draw(ctx, asset_manager);
+    }
+}
+
 impl<T> Button<T> {
     /// Process an event.
     /// If the event is directed at this button, true is returned to signal that the event was consumed.
     /// Otherwise, false is returned.
     /// If the event is consumed, all relevant callbacks are called using the provided data.
-    pub fn consume_event(&mut self, data: &mut T, event: &WindowEvent) -> bool {
+    pub fn on_event(&mut self, data: &mut T, event: &WindowEvent) -> bool {
         let mut event_consumed = false;
 
         match event {
@@ -137,20 +154,15 @@ impl<T> Button<T> {
         event_consumed
     }
 
-    /// Draw the button.
-    pub fn draw<'a>(
-        &'a self,
-        render_pass: &mut rwgfx::RenderPass<'a>,
-        frame_context: &rwgfx::renderer::FrameContext<'a>,
-    ) {
-        self.sprite.draw(render_pass, frame_context);
-        self.text.draw(render_pass, frame_context);
-    }
-
     /// Create a new button.
-    pub fn new(renderer: &mut rwgfx::renderer::Renderer, descriptor: &ButtonDescriptor<T>) -> Self {
+    pub fn new(
+        logger: &Logger,
+        renderer: &rwgfx::renderer::Renderer,
+        asset_manager: &mut asset::Manager,
+        descriptor: &ButtonDescriptor<T>,
+    ) -> Self {
         let sprite = Sprite::new(
-            renderer,
+            renderer.ctx(),
             descriptor.position,
             descriptor.size,
             descriptor.z_index,
@@ -159,22 +171,22 @@ impl<T> Button<T> {
         );
 
         let text = Text::new(
-            renderer,
+            logger.clone(),
+            renderer.ctx(),
+            asset_manager.text_handler_mut(),
             &descriptor.label.clone().unwrap_or(String::new()),
             &TextDescriptor {
-                bold: false,
                 color: rwgfx::color::Decimal {
                     r: 200,
                     g: 0,
                     b: 200,
                     a: 255,
                 },
-                font_family: "Arial",
                 font_size: 14.0,
-                italic: false,
                 position: descriptor.position,
                 size: descriptor.size,
                 z: descriptor.z_index - 1.0,
+                font_id: text::ID_DEFAULT,
             },
         );
 
