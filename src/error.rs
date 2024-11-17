@@ -2,7 +2,26 @@
 
 use std::{error::Error, fmt};
 
-/// Possible errors during context initialisation.
+/// Possible errors during graphical widget creation.
+#[derive(Debug, Copy, Clone)]
+pub enum WidgetCreationError {
+    /// Error while creating the sprite.
+    SpriteCreation,
+}
+
+impl Error for WidgetCreationError {}
+
+impl fmt::Display for WidgetCreationError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Self::SpriteCreation => {
+                write!(f, "Failed to create widget sprite.")
+            }
+        }
+    }
+}
+
+/// Possible errors during window initialisation.
 #[derive(Debug, Copy, Clone)]
 pub enum WindowCreationError {
     /// Error while creating the event loop.
